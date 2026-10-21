@@ -1,0 +1,19 @@
+﻿# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# BMAD
+_bmad/
+_bmad-output/
+.claude/skills/
+
+# Local files
+.DS_Store
+Thumbs.db
