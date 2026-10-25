@@ -1,4 +1,4 @@
-﻿# Dependencies
+# Dependencies
 node_modules/
 
 # Build output
@@ -11,7 +11,6 @@ dist/
 
 # BMAD
 _bmad/
-_bmad-output/
 .claude/skills/
 
 # Local files

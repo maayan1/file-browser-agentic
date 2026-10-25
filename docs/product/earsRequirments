@@ -1,0 +1,40 @@
+# Exercise 1 – Three EARS Requirements
+
+**Project:** Smart Local File Browser  
+**Project Type:** Greenfield  
+**Feature:** File Search & Navigation
+
+## EARS-01: Event-driven Requirement
+
+When the user enters a search term, the system shall display all files within the selected folder and its subfolders whose names contain the search term.
+
+**Acceptance Test:**
+- Input: A folder containing `report.pdf`, `photo.jpg`, and `report-final.docx`.
+- Action: Enter `report` in the search field.
+- Expected Result: Only `report.pdf` and `report-final.docx` appear in the search results.
+
+## EARS-02: State-driven Requirement
+
+While no file is selected, the system shall display a "Select a file to preview" message in the preview panel.
+
+**Acceptance Test:**
+- Input: A selected folder containing files.
+- Action: Leave all files unselected.
+- Expected Result: The preview panel displays "Select a file to preview".
+
+## EARS-03: Unwanted Behavior Requirement
+
+If no files match a non-empty search term, then the system shall display a "No matching files found" message in the search results area.
+
+**Acceptance Test:**
+- Input: A folder containing `report.pdf` and `photo.jpg`.
+- Action: Search for `xyz123`.
+- Expected Result: No files appear in the search results, and the message "No matching files found" is displayed.
+
+## Project Constraints
+
+- All file processing must happen locally in the browser.
+- No network requests or server uploads.
+- Read-only access to user-selected folders.
+- No persistent storage of file contents or metadata.
+- The user must explicitly select the folder to access.
