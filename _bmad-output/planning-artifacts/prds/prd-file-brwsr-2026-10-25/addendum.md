@@ -14,7 +14,11 @@ This addendum holds technical detail and rejected alternatives that belong to ar
   - File System Access API, `showDirectoryPicker({ mode: "read" })`. Chromium only.
   - Feature-detect it for FR-4.
   - The picker throws `AbortError` both when the user cancels and when the folder is blocked. FR-2 therefore treats both the same way (see Rejected alternatives).
-- **MyFiles setup:** pass `startIn: "documents"` to `showDirectoryPicker`. The OS picker has its own **New folder** button, so the user can create `MyFiles` inside the picker; the OS creates the folder, not Find (NFR-2 holds). Verify this on all three operating systems.
+- **MyFiles setup:** the OS picker has its own **New folder** button, so the user can create `MyFiles` inside the picker; the OS creates the folder, not Find (NFR-2 holds). Don't default the picker to Documents (`startIn: "documents"`), because Documents is often cloud-synced (OQ-9). Verify `C:\MyFiles` and `~/MyFiles` on all three operating systems (OQ-1).
+- **Open in tab (FR-21):** use `URL.createObjectURL` on the `File`, with no network involved. For text files, wrap the bytes in a new `Blob` with type `text/plain` so HTML never renders (NFR-5). Revoke the URLs when the session ends.
+- **Typo distance (FR-10):** Damerau-Levenshtein, optimal string alignment variant, with an early exit once the edit limit is exceeded. Compare a query word against whole tokens and against token prefixes of a similar length.
+- **Index limit (NFR-4):** count characters of extracted text (or UTF-16 length × 2 bytes) as the measure. Don't use `performance.memory`, which is non-standard and unreliable.
+- **Rescan (FR-22):** a full rebuild in the MVP. `FileSystemObserver` is experimental and out of scope.
 - **Off the main thread:** run indexing and content extraction in Web Workers (FR-13, NFR-4).
 - **PDF:** a bundled local PDF library (for example, pdf.js) for text extraction and page rendering. Load it from the app bundle, never from a CDN at runtime (NFR-1).
 - **Fuzzy matching:** a small, testable edit-distance implementation in the framework-independent core is preferable to a heavy search library. Either way, the FR-10 thresholds must be configurable for tuning.

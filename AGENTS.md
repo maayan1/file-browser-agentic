@@ -18,7 +18,7 @@ Find is a browser-only, read-only local file search app for desktop Chrome and E
 
 - Domain terms: use the PRD Glossary (§3) terms exactly in code, tests, and stories, with no synonyms.
 - Technical notes for architecture: `_bmad-output/planning-artifacts/prds/prd-file-brwsr-2026-10-25/addendum.md`.
-- EARS acceptance tests: `docs/product/earsRequirments`. EARS-01, EARS-02, and EARS-03 map to FR-8, FR-20, and FR-12.
+- EARS acceptance tests: `docs/product/earsRequirments`. EARS-01, EARS-02, EARS-03 (rev. 2), and EARS-04 map to FR-8, FR-20, FR-12, and FR-12.
 - Decision logs: `.memlog.md` in each planning folder. They are append-only: add entries with `python _bmad/scripts/memlog.py append --workspace <folder> --type <type> --text "<entry>"`, and never edit them by hand.
 
 ## Running and verifying

@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PRD Validation: PRD: Find</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --border: #e7e5e4;
+    --text: #1c1917;
+    --muted: #78716c;
+
+    --verdict-strong: #16a34a;
+    --verdict-adequate: #65a30d;
+    --verdict-thin: #d97706;
+    --verdict-broken: #dc2626;
+
+    --sev-low: #64748b;
+    --sev-medium: #ca8a04;
+    --sev-high: #ea580c;
+    --sev-critical: #dc2626;
+
+    --grade-exc: #16a34a;
+    --grade-good: #65a30d;
+    --grade-fair: #d97706;
+    --grade-poor: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  header.report-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .title h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+  .title .subtitle { color: var(--muted); font-size: 13px; margin-top: 4px; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  .grade {
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    color: white;
+    font-size: 15px;
+    white-space: nowrap;
+  }
+  .grade-excellent { background: var(--grade-exc); }
+  .grade-good { background: var(--grade-good); }
+  .grade-fair { background: var(--grade-fair); }
+  .grade-poor { background: var(--grade-poor); }
+
+  .synthesis {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--muted);
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin-bottom: 24px;
+    font-size: 15.5px;
+  }
+  .synthesis p { margin: 0 0 10px; }
+  .synthesis p:last-child { margin-bottom: 0; }
+
+  .dimension-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .dim-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .dim-card .dim-name { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .dim-card .dim-verdict { font-size: 14px; font-weight: 600; }
+
+  section.dimension, section.reviewer-section { margin-bottom: 14px; }
+  section.dimension details, section.reviewer-section details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  section summary {
+    padding: 14px 20px;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  section summary::-webkit-details-marker { display: none; }
+  section summary::before {
+    content: "▸";
+    display: inline-block;
+    color: var(--muted);
+    transition: transform 0.15s ease;
+  }
+  section details[open] summary::before { transform: rotate(90deg); }
+  section summary h2 {
+    display: inline;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    flex: 1;
+  }
+  .verdict-pill {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: white;
+  }
+  .verdict-strong { background: var(--verdict-strong); }
+  .verdict-adequate { background: var(--verdict-adequate); }
+  .verdict-thin { background: var(--verdict-thin); }
+  .verdict-broken { background: var(--verdict-broken); }
+
+  .dim-body { padding: 4px 20px 18px; }
+  .dim-judgment { color: var(--text); font-size: 14.5px; }
+  .dim-judgment p { margin: 0 0 10px; }
+
+  .findings-list { padding: 0 20px 4px; }
+  article.finding {
+    padding: 14px 0;
+    border-top: 1px solid var(--border);
+  }
+  article.finding:first-child { border-top: none; }
+  article.finding header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .badge {
+    font-size: 10.5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+  }
+  .badge-sev-low { background: rgba(100, 116, 139, 0.12); color: var(--sev-low); }
+  .badge-sev-medium { background: rgba(202, 138, 4, 0.14); color: var(--sev-medium); }
+  .badge-sev-high { background: rgba(234, 88, 12, 0.14); color: var(--sev-high); }
+  .badge-sev-critical { background: rgba(220, 38, 38, 0.14); color: var(--sev-critical); }
+  .finding-title { margin: 0; font-size: 15px; font-weight: 500; flex: 1; min-width: 200px; }
+  .finding-location { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; color: var(--muted); }
+  .finding-note, .finding-fix { margin-top: 6px; font-size: 14px; }
+  .finding-fix strong { color: var(--muted); font-weight: 500; }
+
+  .reviewer-source {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  .mechanical {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-top: 24px;
+    font-size: 14px;
+  }
+  .mechanical h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .mechanical ul { margin: 0; padding-left: 20px; }
+  .mechanical li { margin-bottom: 4px; color: var(--text); }
+
+  footer.report-footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  footer .meta { display: flex; gap: 24px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+  <div class="container">
+    <header class="report-header">
+      <div class="title">
+        <h1>PRD: Find — Validation Report</h1>
+        <div class="subtitle">_bmad-output/planning-artifacts/prds/prd-file-brwsr-2026-10-25/prd.md (+ addendum.md)</div>
+      </div>
+      <div class="grade grade-fair">Grade: Fair</div>
+    </header>
+    <div class="synthesis">
+      <p>This is a strong, build-ready PRD. The thesis is explicit and tested by the metrics (SM-1 now forces content and name-date tasks, SM-3 isolates content search). The Glossary is disciplined, scope cuts are honest, and every high and medium finding from the pre-final review is resolved. What remains is concentrated in the matching rules that stories and tests will lean on hardest. FR-10's headline acceptance example (<code>reprot</code> → <code>report</code>) fails under standard edit distance with the stated 1-edit limit, so "edit" must be defined. How a query is split into query words is undefined. The "exact" definition and EARS-01 use substring language that FR-9's token rules don't honor. Separately, two product bets go unmeasured: the MyFiles strategy rests on an unverified platform premise, and queries that mix a name cue with a content cue, which is the core job, match nothing. None of this blocks UX. The matching items should be settled before stories are written.</p>
+      <p>The grade above (Fair) is derived from the rubric alone: no thin or broken dimensions, 0 critical findings and 1 high. The two additional reviewers surfaced considerably more. The EARS-conformance reviewer found all three EARS requirements satisfied with caveats, with 3 high findings: token-beginning matching narrows EARS-01's "names contain the search term", the undefined query-splitting rule means <code>report-final</code> may not find <code>report-final.docx</code>, and FR-12 replaces EARS-03's message while indexing runs and adds a precondition to its acceptance test. The adversarial reviewer found 2 critical and 8 high findings. Its core attack: the thesis and the flagship journey depend on DOCX, a format the MVP cannot search or preview, and UJ-1 ends at a step (opening the file) that Find cannot perform. It also argues that the ranking buries the content matches the thesis depends on, that a false "No matching files found" appears while enumeration runs, that the 500 MB budget cannot be measured from a web page, that cloud-synced Documents folders turn indexing into mass downloads, that the index goes stale silently, and that SM-1 cannot validate the thesis. If these reviewers' findings were counted in the grade, it would be Poor, because of the two adversarial criticals.</p>
+    </div>
+    <div class="dimension-summary">
+      <div class="dim-card">
+        <div class="dim-name">Decision-readiness</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">Strong</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Substance over theater</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">Strong</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Strategic coherence</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">Strong</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Done-ness clarity</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">Adequate</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Scope honesty</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">Strong</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Downstream usability</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">Strong</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Shape fit</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">Strong</div>
+      </div>
+    </div>
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Decision-readiness</h2>
+          <span class="verdict-pill verdict-strong">strong</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Decisions are stated as decisions and paired with their cost. The read-only stance (§1, NFR-2), no persistence (NFR-3, with OQ-5 naming the one exception that might be justified), the deferral of version clusters despite being "the brief's strongest differentiator" (§7.2 <code>[NOTE FOR PM]</code>), and the reversal to a smart date filter (addendum, Rejected alternatives) all show what was given up. FR-2 now handles the cancel-versus-blocked ambiguity honestly, and the addendum explains why. Open Questions are genuinely open and each has a validation path (OQ-3 and OQ-5 to SM-1, OQ-4 to SM-2 and SM-C1).</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">The MyFiles decision rests on an unverified premise and has no success signal</h3>
+              <span class="finding-location">§3 MyFiles folder, FR-1, FR-2 Notes, OQ-1</span>
+            </header>
+            <div class="finding-note">The MyFiles folder is "the chosen answer to blocked folders", and OQ-1 says "This no longer blocks UX". But OQ-1's first open item is whether Chrome and Edge can open "a <code>MyFiles</code> folder inside Documents on Windows, macOS, and Linux" at all, so the decision's foundation is still unverified. The strategy also asks users to change their browser's download location, which sits uneasily with Principle 7 ("find a file without any onboarding or instructions"), and it only gathers <em>future</em> downloads, while UJ-1's Daniel has documents that "pile up across many folders" today. No SM measures whether users complete or benefit from the setup: SM-1 uses a seeded folder.</div>
+            <div class="finding-fix"><strong>Fix:</strong> State the fallback if the OQ-1 spike fails (for example, the guide recommends another location, or drops the download-location step). Note that the guide is optional and that Principle 7 is satisfied without it. Optionally, record in SM-1 whether participants would adopt MyFiles, next to the OQ-5 re-selection question.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Substance over theater</h2>
+          <span class="verdict-pill verdict-strong">strong</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>One persona, and Daniel drives real requirements: progressive loading, the smart date filter, preview-to-confirm, and the "content not searchable" labels. The NFRs carry product-specific thresholds and verification methods (NFR-1 to NFR-4). NFR-8 is now phrased as an outcome. The Vision's "MVP has one job" paragraph is a falsifiable bet that couldn't be dropped into another PRD. The §1.1 principles earn their place, because each one points to the FR or NFR it settles. The counter-metrics are specific to this product (SM-C3's <code>ticket_20251</code>). No findings.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+
+        </div>
+      </details>
+    </section>
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Strategic coherence</h2>
+          <span class="verdict-pill verdict-strong">strong</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>The thesis (§1 ¶3) drives the order: name search, content search, filters, then preview to confirm. The primary metrics now validate both halves of it. SM-1 requires "at least 2 of the 5 tasks [to be] solvable only through content or a name date" and is within-subject and counterbalanced. SM-3 isolates content search. Each counter-metric is tied to the SM it balances. The MVP is problem-solving in kind, and the scope logic matches.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Queries that mix a name cue and a content cue match nothing</h3>
+              <span class="finding-location">§3 Name match, Content match; FR-9, FR-14; §2.1</span>
+            </header>
+            <div class="finding-note">The core job is "describe what I <em>do</em> remember". A name match needs <em>every</em> query word in the name, and a content match needs <em>every</em> query word in the content. So <code>budget q3</code>, where "q3" is in the name and "budget" is only in the text, is neither, and the right file is absent from the result list. Nothing in §6 or §7.2 says this is intended, and it directly affects SM-1's half-remembered-cue tasks and Principle 1 ("Never hide the right file").</div>
+            <div class="finding-fix"><strong>Fix:</strong> Either decide that a query word may be satisfied by the name <em>or</em> the content (and give that case a match kind and a rank), or list "queries that mix name words and content words" in §7.2, and add a mixed-cue query to OQ-3 or the SM-1 task design so the gap is measured.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Done-ness clarity</h2>
+          <span class="verdict-pill verdict-adequate">adequate</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>This dimension improved most since the pre-final review. Match kinds are defined per query word, tokenization covers camelCase and letter/digit boundaries, the empty-query-with-filter state is defined, rank with no query is defined, and performance has a reference machine, a scale ceiling, and a memory budget. FR-9, FR-11, FR-12 and FR-18 now read as acceptance criteria. What keeps this at <em>adequate</em> is that the matching rules, which FR-8 to FR-11, SM-2, SM-C1 and OQ-4 all rest on, still have three gaps that a developer will hit on day one.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">"Edit" is undefined, and FR-10's own headline example fails under the usual definition</h3>
+              <span class="finding-location">FR-10, FR-11, UJ-1 step 2, SM-2</span>
+            </header>
+            <div class="finding-note"><code>reprot</code> has 6 letters, so it "tolerate[s] 1 edit". Turning <code>reprot</code> into <code>report</code> is one <em>transposition</em>, but under plain Levenshtein distance it costs two substitutions. So FR-10's first consequence, FR-11's typo example, and UJ-1's headline query all fail if the developer chooses the most common algorithm. The PRD also doesn't say whether typo tolerance applies against a token's beginning: does <code>reprot</code> match the token <code>Reports</code> in <code>Q3_Reports.pdf</code>? SM-2, SM-C1 and the OQ-4 tuning depend on both answers.</div>
+            <div class="finding-fix"><strong>Fix:</strong> In FR-10, define an edit as an insertion, deletion, substitution, or swap of two adjacent letters (Damerau / optimal string alignment distance). State whether a typo-tolerant query word can match a token's beginning, and add one acceptance example either way.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">How a query is split into query words is undefined</h3>
+              <span class="finding-location">§3 Query, FR-9</span>
+            </header>
+            <div class="finding-note">The Glossary says the query "is split into <strong>query words</strong>" but not by what. Name tokens split at spaces, <code>_</code>, <code>-</code>, <code>.</code>, case changes, and letter/digit boundaries. If query words split only at spaces, then typing <code>project_report</code>, <code>ProjectReport</code>, or <code>Q3</code> becomes one query word that matches no single name token, so pasting or retyping a real file name can fail.</div>
+            <div class="finding-fix"><strong>Fix:</strong> State that the query is split by the same rules as name tokens (or name the difference), and add an acceptance example: "<code>project_report</code> matches <code>Project Report.pdf</code>".</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">"Exact" uses substring language that the matching rules and EARS-01 don't agree on</h3>
+              <span class="finding-location">§3 Match kind; FR-8 EARS-01; FR-9</span>
+            </header>
+            <div class="finding-note">"Exact" is "the whole query appears in the name". EARS-01 requires names that "contain the search term". FR-9 instead matches only whole tokens or token beginnings. For <code>port</code> against <code>report.pdf</code>, the substring rules say match (and "exact"), while FR-9 says no match. The EARS-01 acceptance fixture passes either way, so the divergence is invisible to its test.</div>
+            <div class="finding-fix"><strong>Fix:</strong> State that only name matches (FR-9) receive a match kind, and that "exact" means the query appears in the name <em>and</em> the entry is a name match. In FR-8, note that the PRD deliberately narrows EARS-01's "contain" to token and token-beginning matching, and add a negative example (<code>port</code> does not match <code>report.pdf</code>).</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">The indexing target has no workload definition</h3>
+              <span class="finding-location">NFR-4, SM-5</span>
+            </header>
+            <div class="finding-note">"1,000 mixed text files and text-layer PDFs … within 60 seconds" fixes the count but not the sizes or the mix. 1,000 PDFs near the 10 MB limit and 1,000 small <code>.md</code> files differ by orders of magnitude, so the target can't be tested and can't guide architecture.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Define the SM-5 fixture: share of PDFs, median and maximum file size, and total bytes (for example "≤ 500 MB total, 30% PDFs, median 200 KB").</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Behavior above 50,000 file entries is undefined</h3>
+              <span class="finding-location">NFR-4</span>
+            </header>
+            <div class="finding-note">"Folders larger than that are not supported in the MVP, and Find says so" doesn't say whether Find stops reading, loads the first 50,000, or refuses the folder, or whether name search and indexing run.</div>
+            <div class="finding-fix"><strong>Fix:</strong> One consequence, for example "Find stops at 50,000 file entries, shows a notice suggesting a subfolder, and searches only what was loaded".</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Name-date edge cases are open</h3>
+              <span class="finding-location">FR-18, SM-7, SM-C3</span>
+            </header>
+            <div class="finding-note">"Standalone year" isn't tied to name tokens, which <code>ticket_20251</code> (SM-C3) depends on. Names with two dates have no rule. The addendum's valid-calendar-date rule is a product rule that SM-7 tests, but it lives only in the addendum.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Define "standalone" as "a name token of exactly four digits", say which date wins when there are several (or that any date counts), and move the valid-calendar-date rule into FR-18.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">The accessibility scope for previews is unclear</h3>
+              <span class="finding-location">NFR-6, FR-20</span>
+            </header>
+            <div class="finding-note">"Fully usable by keyboard, and meet WCAG 2.1 AA" for "the preview" covers PDFs rendered page by page and arbitrary user images with no alt text. Read literally, this needs an accessible PDF text layer, a significant architecture input.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Scope it: preview controls and text-file previews meet WCAG 2.1 AA; PDF and image previews are keyboard-operable, with the file name as the accessible label.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">"Filters hide N matches" is ambiguous with an empty query</h3>
+              <span class="finding-location">FR-12</span>
+            </header>
+            <div class="finding-note">With no query there are no matches, yet the filtered-out notice "applies whether the visible result list is empty or not".</div>
+            <div class="finding-fix"><strong>Fix:</strong> Say that with an empty query the count is of file entries hidden by the filters, or that the notice only appears when there is a query.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Scope honesty</h2>
+          <span class="verdict-pill verdict-strong">strong</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>§6 Non-Goals and §7.2 Out of Scope do real work, including the less obvious cuts: day-first name dates, full on-disk paths, one selected folder per session, and the DOCX → XLSX → OCR order. The <code>[ASSUMPTION]</code> tags are consistent and fully indexed. §10 now says which defaults architecture should treat as fixed. Open-items density (about 18 assumptions and 6 live OQs) is fine for a portfolio-stakes PRD because none is marked as blocking. The one silent omission found (mixed name-and-content queries) is under Strategic coherence.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">§0 promises a "Blocks" marker that no OQ carries</h3>
+              <span class="finding-location">§0 How to read it; §9</span>
+            </header>
+            <div class="finding-note">§0 says "Open questions that block a later phase are marked <strong>Blocks</strong> in §9", but §9 uses only "Informs", and OQ-1 explicitly "no longer blocks UX".</div>
+            <div class="finding-fix"><strong>Fix:</strong> Say in §0 that no open question currently blocks a phase, or mark OQ-1 as blocking the architecture spike if that is the intent.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Downstream usability</h2>
+          <span class="verdict-pill verdict-strong">strong</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>The Glossary now covers every load-bearing noun the pre-final review flagged, and the FRs use them. Rank is defined once in §3, and FR-11 points to it. FR, NFR, SM, and SM-C IDs are contiguous and unique, the §7.1 FR ranges resolve, and UJ-1 steps are referenced precisely from each feature description. EARS sources are cited (§0). Each feature section reads on its own.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Residual synonyms of Glossary terms</h3>
+              <span class="finding-location">§1, §2.2, UJ-1 step 4, §4.5, FR-1, FR-4, NFR-3, NFR-4, OQ-5</span>
+            </header>
+            <div class="finding-note">"Results" / "name results" stands in for the result list or file entries in it. "Folder access" and "folder permission" sit next to the defined <strong>read-only access</strong>. Story extraction will copy them.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Replace "results" with "the result list" where it refers to the list, and use "read-only access" (or add "folder permission" to the Glossary as the persisted browser handle OQ-5 is about).</div>
+          </article>
+        </div>
+      </details>
+    </section>
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Shape fit</h2>
+          <span class="verdict-pill verdict-strong">strong</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>A single-persona consumer utility with one rich UJ, edge cases folded into it, and no journey theater is the right shape. Implementation detail (<code>showDirectoryPicker</code>, <code>AbortError</code>, pdf.js, Web Workers, <code>FileSystemDirectoryHandle</code>) stays in the addendum. At about 8 pages it is the agreed length. As a chain-top PRD it carries the traceability downstream needs without over-formalizing. No findings.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+
+        </div>
+      </details>
+    </section>
+    <section class="reviewer-section">
+      <details>
+        <summary>
+          <h2>EARS conformance review</h2>
+          <span class="reviewer-source">review-ears.md</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>All three EARS requirements are <strong>satisfied with caveats</strong>. EARS-01 → FR-8: the acceptance test passes, but token-beginning matching and the undefined query-splitting rule contradict "all files whose names contain the search term". EARS-02 → FR-20: the term "preview panel" is not reconciled with the Glossary's "preview", and the PRD adds a folder-selected precondition. EARS-03 → FR-12: while indexing runs, the PRD shows a different message for the same no-match condition, and message precedence with filters and after a cancelled index is undefined. All five Project Constraints are covered, with two small wording gaps.</p>
+            <p>Counts: critical 0, high 3, medium 6, low 8. Out-of-scope observation (not counted): FR-10's <code>reprot</code> → <code>report</code> holds only under Damerau-Levenshtein.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">F-01 Token-beginning matching contradicts EARS-01 "names contain the search term"</h3>
+              <span class="finding-location">§3 Name token / Name match; FR-9; FR-8</span>
+            </header>
+            <div class="finding-note">EARS-01 describes substring matching; the PRD matches only at token boundaries. <code>annualreport2025.pdf</code> is not returned for <code>report</code> although its name contains <code>report</code>, and <code>port</code> does not return <code>report.pdf</code>. This silently narrows a "shall display all" requirement and goes against Principle 1.</div>
+            <div class="finding-fix"><strong>Fix:</strong> (a) Add a substring fallback for query words of 3+ characters, ranked after token-beginning matches, with the test "<code>report</code> returns <code>annualreport2025.pdf</code>"; or (b) keep token semantics deliberately, amend EARS-01, and record the deviation in a traceability table.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">F-02 The query splitting rule is undefined, so <code>report-final</code> may not find <code>report-final.docx</code></h3>
+              <span class="finding-location">§3 Query; FR-9</span>
+            </header>
+            <div class="finding-note">The Glossary gives detailed splitting rules for names but none for the query. If the query splits only at spaces, <code>report-final</code> is one word that matches no single token of <code>report-final.docx</code>, breaking EARS-01 on a name from the EARS fixture itself.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Add to the Glossary: "The query is split into query words by the same rules as name tokens." Add FR-9 tests: "<code>report-final</code> matches <code>report-final.docx</code>" and "<code>report.pdf</code> matches <code>report.pdf</code>".</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">F-03 FR-12 changes EARS-03's message while indexing runs and adds a precondition to its acceptance test</h3>
+              <span class="finding-location">FR-12 bullets 1-2</span>
+            </header>
+            <div class="finding-note">EARS-03 is unconditional. The PRD shows "No matches yet. Still searching file contents…" during indexing and adds "after indexing completes" to the test. Because the fixture's <code>report.pdf</code> is indexed, the original EARS test is timing-dependent. An undocumented modification of a source requirement.</div>
+            <div class="finding-fix"><strong>Fix:</strong> (a) Always show "No matching files found" and add the still-updating indicator as a secondary line; or (b) amend EARS-03 with an indexing-complete condition and add a second EARS statement for the indexing state, recorded in a traceability table.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">F-04 Message precedence is undefined when filters hide every match</h3>
+              <span class="finding-location">FR-12 bullet 3</span>
+            </header>
+            <div class="finding-note">Unspecified whether "No matching files found" is suppressed when matches exist but are all filtered out, or whether "Filters hide 0 matches" appears.</div>
+            <div class="finding-fix"><strong>Fix:</strong> "No matching files found" only when the query matches zero entries before filters; when all matches are filtered out, show only "Filters hide N matches" with Clear filters; never show "Filters hide 0 matches".</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">F-05 The empty-result message after indexing is cancelled is undefined</h3>
+              <span class="finding-location">FR-12; FR-13 bullet 3</span>
+            </header>
+            <div class="finding-note">After a cancel, indexing is neither "complete" nor "running", so neither FR-12 message applies.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Add: after cancel, an empty result list for a non-empty query shows "No matching files found" with the content-search-incomplete notice.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">F-06 EARS-02's "preview panel" is not reconciled with the Glossary term "preview"</h3>
+              <span class="finding-location">§3 Preview; FR-20</span>
+            </header>
+            <div class="finding-note">The Glossary's preview exists only with a selected file entry, so "the preview shows …" with none selected is self-contradictory. UX has no defined region name for the EARS-02 message.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Add a Glossary entry for <strong>Preview panel</strong> and reword the FR-20 bullet to "the preview panel shows …".</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">F-07 EARS-02's state is underspecified, and the PRD's narrower condition is not stated as a deviation</h3>
+              <span class="finding-location">FR-20; §3 Start state</span>
+            </header>
+            <div class="finding-note">EARS-02 applies whenever no file is selected, including the start state, where the PRD shows no preview. The PRD's "with a folder selected" is sensible but a silent narrowing.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Restate EARS-02 in the PRD with the folder-open condition and note the narrowing in the traceability table.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">F-08 The PRD does not restate the EARS statements or log its deviations</h3>
+              <span class="finding-location">§0</span>
+            </header>
+            <div class="finding-note">Only the acceptance tests are reproduced. The PRD changes semantics (F-01, F-03, F-07) without saying so.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Add an "EARS Traceability" subsection: original statement, refined EARS statement, carrying FR, deviations and rationale.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">F-09 NFR-3's storage list is not exhaustive</h3>
+              <span class="finding-location">NFR-3</span>
+            </header>
+            <div class="finding-note">Omits sessionStorage (survives reload, undermining FR-3) and the Origin Private File System (a likely spill target for a 500 MB index).</div>
+            <div class="finding-fix"><strong>Fix:</strong> Reword to "any browser storage, including but not limited to …" with session storage, OPFS and service-worker caches; extend Verify.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">F-10 The EARS-01 acceptance wording is weaker than "Only"</h3>
+              <span class="finding-location">FR-8 bullet 1</span>
+            </header>
+            <div class="finding-note">Equivalent for a three-file fixture, but does not carry "Only" if the fixture grows.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Write "returns exactly <code>report.pdf</code> and <code>report-final.docx</code>".</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">F-11 NFR-1 scopes "no network" to after the initial load</h3>
+              <span class="finding-location">NFR-1</span>
+            </header>
+            <div class="finding-note">Correct reading, but undocumented against the EARS constraint.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Add one line explaining the reading: only Find's own static assets, never a request carrying file data.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">F-12 The fixture file content is unspecified</h3>
+              <span class="finding-location">FR-8, FR-12</span>
+            </header>
+            <div class="finding-note">If the fixture <code>report.pdf</code> contained <code>xyz123</code>, EARS-03 would fail with a content match.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Specify fixtures: <code>report.pdf</code> is a text-layer PDF that does not contain <code>xyz123</code>.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">F-13 EARS-01 "all files" vs the NFR-4 capacity cap</h3>
+              <span class="finding-location">NFR-4 bullet 2</span>
+            </header>
+            <div class="finding-note">Above 50,000 file entries the PRD does not satisfy "all files".</div>
+            <div class="finding-fix"><strong>Fix:</strong> Note the bound in the traceability table; specify what "not supported" means.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">F-14 EARS form quality: EARS-01 trigger and statement/test mismatch</h3>
+              <span class="finding-location">docs/product/earsRequirments EARS-01</span>
+            </header>
+            <div class="finding-note">"Enters" is ambiguous; the statement requires "all" while the test asserts "only"; "contain" fixes substring semantics.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Restate as "When the user changes the query, …" stating completeness and allowed extras.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">F-15 EARS form quality: EARS-03 pattern choice and ambiguity</h3>
+              <span class="finding-location">EARS-03; FR-12</span>
+            </header>
+            <div class="finding-note">No-match is a normal outcome, not an unwanted event; "match" and "non-empty" are ambiguous; "search results area", "search field", "search box" are not Glossary terms.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Restate in event-driven form against the result list; define a blank query; add "search box" and "result list" to the Glossary.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">F-16 Deselection rules affecting EARS-02 are unspecified</h3>
+              <span class="finding-location">FR-15, FR-12, FR-20</span>
+            </header>
+            <div class="finding-note">Unclear whether the preview panel returns to "Select a file to preview" when the selected entry is filtered out, the query changes, or a folder is selected.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Add an FR-20 consequence: the selected file entry stays selected until another is selected or the session ends.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">F-17 Project name: "Smart Local File Browser" vs "Find"</h3>
+              <span class="finding-location">§0; EARS file header</span>
+            </header>
+            <div class="finding-note">A reader matching documents by project name would not connect them.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Add a clause to §0 noting the EARS file's project name.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+    <section class="reviewer-section">
+      <details>
+        <summary>
+          <h2>Adversarial review</h2>
+          <span class="reviewer-source">review-adversarial-general.md</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p><strong>The core attack:</strong> the PRD wants to prove that Find "gets users to the right file faster than their operating system's search". Yet it excludes the formats that office workers' important files mostly use (DOCX, XLSX). It ends the flagship journey at a step Find cannot perform. It ranks content matches below every weak name match. And it compares itself with OS search tools that already index content. The thesis is set up to fail, or to pass only on a rigged fixture.</p>
+            <p>Counts: 2 critical, 8 high, 13 medium, 6 low (29 total). Each finding carries the consequence if it ships unchanged.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-critical">critical</span>
+              <h3 class="finding-title">C-1 The thesis and the flagship journey depend on a format the MVP cannot search</h3>
+              <span class="finding-location">§1 Vision ¶3; UJ-1; §2.2; FR-16; §7.2; SM-1</span>
+            </header>
+            <div class="finding-note">Daniel is looking for a <em>report</em> he <em>worked on</em>. That is almost certainly a DOCX. In the MVP, DOCX gets no content search (FR-16) and no preview (FR-20), so the climax ("the preview shows the phrase he remembered") cannot happen for the most likely file. Windows Search and Spotlight already index DOCX, XLSX, and PDF content. §2.2 quietly writes off "people whose important content is in Word or Excel files", which describes most of the target user group. Consequence: SM-1 either fails, or "passes" only because the seeded folder avoids Office files, so the MVP proves nothing about real users.</div>
+            <div class="finding-fix"><strong>Fix:</strong> (a) Move DOCX text extraction into the MVP and add a plain-text DOCX preview; or (b) rewrite UJ-1 around a TXT, MD, or PDF, narrow the persona, and restate the thesis as "faster than OS search for text and PDF content plus name dates". Either way, add a DOCX case to SM-1 or state that it is excluded.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-critical">critical</span>
+              <h3 class="finding-title">C-2 The journey ends in a step Find cannot perform</h3>
+              <span class="finding-location">UJ-1 Resolution; §3 Location; §7.2; addendum Rejected alternatives</span>
+            </header>
+            <div class="finding-note">"He notes the file's location … and opens it in his usual app." Find cannot open the file, reveal the full path, or hand the file to the OS. The user must navigate manually in Explorer or Finder from a folder name Find cannot even place on disk: the exact pain the product exists to remove. SM-1 does not say whether "time to the correct file" means identified or opened. Consequence: users hit a dead end at the moment of success, and SM-1 overstates Find's advantage by stopping the clock before the slowest step.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Define the job's end state. Add the best hand-off the platform allows: Copy relative path, Copy file name, and (if architecture confirms) Download a copy or open-in-new-tab for PDFs and images. Define SM-1's stop condition as "the file is open in its target app", or report both times.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">H-1 The tokenization rule contradicts its own acceptance test (<code>q3</code>)</h3>
+              <span class="finding-location">§3 Name token; FR-9; FR-11</span>
+            </header>
+            <div class="finding-note">Names split between letters and digits (<code>Q3</code> → <code>Q</code>, <code>3</code>), so the query word <code>q3</code> matches neither token, and at 2 characters it gets no typo tolerance. FR-9 still requires <code>q3 report</code> to match <code>Project_Report_Q3.docx</code>. A developer who implements the Glossary literally fails FR-9.</div>
+            <div class="finding-fix"><strong>Fix:</strong> State that query words use the same splitter as names, and that a query word splitting into several tokens matches consecutive name tokens. Add <code>q3</code>, <code>Q3</code>, and <code>report2024</code> fixtures.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">H-2 "Exact" can be true for a file that is not a name match</h3>
+              <span class="finding-location">§3 Match kind / Name match; FR-11</span>
+            </header>
+            <div class="finding-note"><code>port</code> against <code>report.pdf</code> is a substring hit (so "exact") but no token beginning (so not a name match). Ranking is undefined at the very top of the list; two engineers will build two different rankers, and SM-2 numbers become meaningless.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Redefine exact as the query's token sequence equalling a consecutive run of name tokens, state that only name matches get a name match kind, and add the <code>port</code>/<code>report.pdf</code> fixture.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">H-3 Name search "never waits", but it must wait for folder enumeration, and FR-12 then lies</h3>
+              <span class="finding-location">§1.1 principle 3; FR-1; FR-5; FR-12; FR-15; NFR-4</span>
+            </header>
+            <div class="finding-note">Recursive enumeration of tens of thousands of entries takes seconds to minutes (the brief's research records stalls at ~17k files). Still-updating is defined only for content indexing, so a query can show "No matching files found" when the file simply hasn't been listed yet. A false "no match" in the first seconds of every session is the fastest possible way to lose user trust.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Add an enumeration phase with "Listing files… N found" progress, use still-updating during enumeration or indexing, never show "No matching files found" until both complete or are cancelled, and add enumeration-time targets to NFR-4.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">H-4 The 500 MB memory budget cannot be measured from a web page</h3>
+              <span class="finding-location">NFR-4 bullet 4; FR-16; §3 Content not searchable</span>
+            </header>
+            <div class="finding-note"><code>performance.memory</code> is non-standard and imprecise; <code>measureUserAgentSpecificMemory()</code> needs cross-origin isolation. The tab can be killed on an 8 GB machine long before 500 MB of index. Untestable as written, and the crashed-tab failure mode is not addressed.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Restate the budget as a measurable proxy (for example millions of characters of extracted text) enforced by the indexer, add a memory-pressure requirement, and validate the proxy in the architecture spike.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">H-5 Ranking structurally buries the content matches the thesis depends on</h3>
+              <span class="finding-location">§3 Rank; FR-11; SM-1; SM-3; OQ-3</span>
+            </header>
+            <div class="finding-note">Every content-only match ranks below every typo name match, with recency as the only tie-break. <code>budget memo</code> can produce dozens of weak typo name matches that outrank the one file that actually contains "budget memo". SM-3 fixtures conveniently avoid competing name matches, and OQ-3 defers this until after the ranking engine is built.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Define a scored rank (exact/partial name &gt; all-words content match &gt; typo name), add in-tier relevance before recency, add SM-3 fixtures with competing typo matches, and resolve OQ-3 before architecture.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">H-6 Cloud-synced folders turn "read-only, nothing leaves the machine" into mass downloads</h3>
+              <span class="finding-location">FR-1 MyFiles guide; addendum; NFR-1; NFR-2; §1</span>
+            </header>
+            <div class="finding-note">Documents is often redirected to OneDrive Files On-Demand or iCloud Drive. Indexing forces placeholder hydration: gigabytes downloaded, disk filled, network traffic. NFR-1 "passes" while the machine does exactly what the privacy promise implies it won't, and the PRD's recommended folder location walks straight into this.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Add a requirement for cloud placeholder folders (detect and warn, never index unavailable files or ask first, a "not available offline" FR-16 reason), test redirected folders in the OQ-1 spike, and reconsider Documents as the MyFiles location.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">H-7 No way to see changes in the folder: the index goes stale silently</h3>
+              <span class="finding-location">§3 Session; FR-3; §4.2; §4.4; principle 4</span>
+            </header>
+            <div class="finding-note">Daniel uses Find all day, but files added, renamed, or deleted after enumeration never appear. The only refresh is a reload that throws away the index and permission. By midday the newest files, the ones most likely wanted, are missing with no warning.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Add a Rescan action that keeps the permission and re-indexes only changed files, show "Listed at HH:MM", and define the preview error for a file that is no longer readable.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">H-8 SM-1 cannot validate the thesis it is meant to prove</h3>
+              <span class="finding-location">§8 SM-1; §1 Vision ¶3</span>
+            </header>
+            <div class="finding-note">With 5 users and a median, no plausible result separates signal from noise. The seeded folder may sit outside the OS search index, handing Find an unfair advantage; content-only tasks are chosen to favor Find; folder choice and indexing time are not stated as included. The MVP's single go/no-go metric produces a result nobody should trust.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Start the clock in the start state, put the seeded folder in an OS-indexed location, include a DOCX task, report per-task times, and raise n or reframe SM-1 as a directional signal.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">M-1 The indexing progress total is unknown while enumeration runs</h3>
+              <span class="finding-location">FR-13</span>
+            </header>
+            <div class="finding-note">The denominator grows while the user watches; the progress bar runs backward or jumps.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Show "340 indexed, 1,200+ found (still listing)" until enumeration completes.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">M-2 Behavior at the 50,000-entry limit is undefined, and it hides files</h3>
+              <span class="finding-location">NFR-4 bullet 2; principle 1</span>
+            </header>
+            <div class="finding-note">Files beyond the limit vanish with no explanation; each story writer will invent their own behavior.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Stop at the limit, keep what is listed, show a persistent banner, and treat the list as incomplete in FR-12 messages.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">M-3 A query split across the name and the content matches nothing</h3>
+              <span class="finding-location">§3 Name match / Content match; FR-9; FR-14</span>
+            </header>
+            <div class="finding-note">For <code>budget daniel</code>, with <code>budget</code> in the name and <code>daniel</code> only inside the file, the file is neither kind of match. The right file is hidden for exactly the half-remembered queries the product targets.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Add a combined name + content match kind and place it in the rank.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">M-4 The text preview cut-off can sit before the first match</h3>
+              <span class="finding-location">FR-20; FR-16</span>
+            </header>
+            <div class="finding-note">A 5 MB log is indexed in full but previewed only to 1 MB; a match at 3 MB cannot be shown. Users conclude the match is wrong.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Preview a 1 MB window around the first match and say so in the cut-off notice.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">M-5 PDF preview safety is not specified enough to meet NFR-1 and NFR-5</h3>
+              <span class="finding-location">NFR-5; NFR-1; FR-20; addendum</span>
+            </header>
+            <div class="finding-note">pdf.js supports PDF JavaScript and link annotations; one click in a hostile PDF breaks the privacy guarantee.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Require scripting disabled, inert or confirmed links, no form submission; add to SM-6.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">M-6 pdf.js support files make "zero requests after load" fragile</h3>
+              <span class="finding-location">NFR-1; SM-6; addendum</span>
+            </header>
+            <div class="finding-note">Worker, CMaps, standard fonts and lazy chunks load on demand; SM-6 fails on the first CJK or non-embedded-font PDF.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Fetch or inline every runtime asset at initial load; add CJK and non-embedded-font PDFs to SM-6.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">M-7 Cancelling the picker mid-session may destroy the session</h3>
+              <span class="finding-location">FR-2; FR-3; §3 Session</span>
+            </header>
+            <div class="finding-note">Read literally, one stray click on Choose folder then Cancel throws away a minutes-long index.</div>
+            <div class="finding-fix"><strong>Fix:</strong> A cancelled or blocked picker during an active session keeps the session and shows the hint inline.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">M-8 Name-date detection will produce false positives that SM-C3 says it must not</h3>
+              <span class="finding-location">FR-18; SM-C3; addendum</span>
+            </header>
+            <div class="finding-note"><code>invoice_2048.pdf</code>, <code>PO-2075.pdf</code>, <code>v2024</code> all become dates; digit boundaries are undefined.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Define boundaries precisely and add these cases to SM-7 and SM-C3 fixtures.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">M-9 Developer and junk folders are not excluded</h3>
+              <span class="finding-location">§3 Type; NFR-4; FR-13</span>
+            </header>
+            <div class="finding-note"><code>node_modules</code>, <code>.git</code>, build output and <code>~$</code> lock files blow the 50k limit and memory budget and pollute results.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Add a visible default exclusion list with an excluded-entry count.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">M-10 Text encodings are unstated, so content search fails silently</h3>
+              <span class="finding-location">FR-14; FR-16; §3 Searchable content</span>
+            </header>
+            <div class="finding-note">UTF-16 and Windows-1252 CSVs decoded as UTF-8 never match, yet are not labelled, which SM-C2 forbids.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Require BOM and encoding detection and add "could not decode text" as an FR-16 reason.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">M-11 The "content not searchable" label covers DOCX and XLSX only</h3>
+              <span class="finding-location">FR-16; §3 Content not searchable</span>
+            </header>
+            <div class="finding-note">PPTX, RTF, ODT, EML, MSG carry no label; users trust a negative result for a deck OS search would have found.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Label every non-image type other, or list the labelled formats.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">M-12 The layout relationship between the folder tree and the result list is contradictory</h3>
+              <span class="finding-location">§4.2; FR-12; FR-19; FR-7</span>
+            </header>
+            <div class="finding-note">FR-12 implies a swap; §4.2 and FR-19 imply both visible. UX and stories will argue about the layout.</div>
+            <div class="finding-fix"><strong>Fix:</strong> State the layout model or mark it as a UX decision with constraints.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">M-13 Accessibility for a large virtualized tree has no testable criteria</h3>
+              <span class="finding-location">NFR-6; FR-5; FR-15</span>
+            </header>
+            <div class="finding-note">Virtualization, ARIA tree patterns and live-region announcements are unstated; accessibility gets marked done by assertion.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Add concrete criteria: ARIA tree pattern, throttled polite live region, focus retention during inserts, a named screen reader/browser pair.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">L-1 Other Chromium browsers fall between FR-4 and NFR-7</h3>
+              <span class="finding-location">FR-4; NFR-7; addendum</span>
+            </header>
+            <div class="finding-note">Opera, Vivaldi and Arc pass feature detection; Brave disables the API.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Base FR-4 on API availability and reword the message.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">L-2 The user's sort and live inserts conflict</h3>
+              <span class="finding-location">FR-7; FR-15</span>
+            </header>
+            <div class="finding-note">New content matches are inserted in rank order even when the user has sorted.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Insert in the active order.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">L-3 The 90% coverage target has no defined boundary</h3>
+              <span class="finding-location">NFR-8; SM-8</span>
+            </header>
+            <div class="finding-note">"Rules" and the coverage measure are undefined; easy to game.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Name the rule modules and specify branch coverage.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">L-4 Time zone and day boundaries for the date filter are unstated</h3>
+              <span class="finding-location">FR-18; FR-6</span>
+            </header>
+            <div class="finding-note">Off-by-one-day filter results and flaky tests.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Evaluate ranges in local time, 00:00:00 start to 23:59:59.999 end.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">L-5 "Final" status with unverified foundations</h3>
+              <span class="finding-location">front matter; OQ-1; §10</span>
+            </header>
+            <div class="finding-note">The MyFiles strategy and the "New folder in picker" claim are unverified; FR-1 and FR-2 change if the spike fails.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Mark FR-1 and FR-2 conditional on the OQ-1 spike and name a fallback.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">L-6 The assumptions index is incomplete</h3>
+              <span class="finding-location">§10; FR-12; FR-6; FR-13</span>
+            </header>
+            <div class="finding-note">Exact message strings, size-format thresholds and filter-notice behavior are untagged; downstream treats placeholder copy as requirements.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Tag them, or state that UI copy is a UX decision.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+    <div class="mechanical">
+      <h3>Mechanical notes</h3>
+      <ul>
+        <li><strong>Assumptions Index roundtrip: clean.</strong> Every inline <code>[ASSUMPTION]</code> has an index entry, and every index entry appears inline. The index order is not by section (FR-1 sits after FR-18). Cosmetic.</li>
+        <li><strong>IDs.</strong> FR-1 to FR-20, NFR-1 to NFR-8, SM-1 to SM-8, SM-C1 to SM-C3, OQ-1 to OQ-8, and UJ-1 are contiguous and unique. All cross-references resolve.</li>
+        <li><strong>Resolved OQs kept in §9.</strong> OQ-6 and OQ-8 are marked <em>Resolved</em>. Moving them to a short "Resolved" sub-list would keep §9 to open questions only.</li>
+        <li><strong>Provenance note inside a requirement.</strong> FR-19 says "Confirmed by the user." This is process history, not a requirement. Drop it, or move it to the memlog.</li>
+        <li><strong>Brief sync verified.</strong> The brief matches the PRD on MyFiles, the smart date filter, and version clusters (post-MVP), so OQ-8's resolution holds.</li>
+        <li><strong>Required sections</strong> are all present for the stakes and product type.</li>
+        <li><strong>Pre-final review status.</strong> All findings in <code>review-rubric-prefinal.md</code> are resolved in the current text. Only partial carry-overs remain: a few "results" and "folder access" synonyms (Downstream usability, low), and the phase-blocker marker that §0 promises but §9 doesn't use (Scope honesty, low).</li>
+      </ul>
+    </div>
+    <footer class="report-footer">
+      <div class="meta">
+        <span>Rubric: .claude/skills/bmad-prd/assets/prd-validation-checklist.md</span>
+        <span>Reviewers: review-rubric.md, review-ears.md, review-adversarial-general.md</span>
+        <span>Generated: 2026-10-25T16:41:28+02:00</span>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

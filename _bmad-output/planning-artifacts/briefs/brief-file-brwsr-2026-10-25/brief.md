@@ -111,7 +111,7 @@ Everything happens on the user's machine. The product never uploads, changes, mo
 
 - **Blocked folders.** Browsers may refuse to open sensitive folders such as Downloads, Desktop, or the home folder. Those are exactly where this user's new files arrive.
   - *Decision:* the **MyFiles** folder, created by the user and set as the browser's download location. Find guides the setup; it never creates the folder itself.
-  - *To verify:* that MyFiles inside Documents opens in Chrome and Edge on all three operating systems, and how Downloads behaves for users who skip the setup.
+  - *To verify:* that a local, non-synced MyFiles folder (`C:\MyFiles`, `~/MyFiles`) opens in Chrome and Edge on all three operating systems, and how Downloads behaves for users who skip the setup.
   - *Gap:* attachments saved by desktop email and chat apps still land elsewhere.
 - **Rescanning every session.** Nothing is persisted, so every session re-reads the folder and re-extracts content. No public benchmarks exist for large folders: one report has Chrome stalling at about 17,000 files. Size limits and a progress UX must come out of the PRD and architecture.
 - **Reach.** Supporting Chromium only excludes Firefox and Safari users. Neither browser has plans to add the folder-access API.

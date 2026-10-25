@@ -1,0 +1,48 @@
+I want to build a new application from scratch using the BMAD methodology.
+
+**Project name:** Smart Local File Browser
+
+**Project type:** Greenfield
+
+I want to create a web application that allows users to browse, search, and preview files stored locally on their computers.
+
+The application should allow users to:
+
+1. Select a local folder from their computer.
+2. Display folders and files in a hierarchical folder tree.
+3. Navigate through folders and subfolders.
+4. Search for files by name.
+5. Filter files by type.
+6. Select a search result and locate it in the folder tree.
+7. View file details such as name, size, type, and last modified date.
+8. Preview supported files, including images, PDFs, and text files.
+9. Switch between list view and thumbnail view.
+10. Sort files by name, type, size, or date.
+
+**Important constraints:**
+
+- The application must work locally in the browser.
+- No backend server.
+- No network requests during application use.
+- No file uploads to external servers.
+- Read-only access to user-selected folders.
+- No persistent storage of file contents or metadata.
+- The core business logic should be framework-independent.
+
+**How I want to work:**
+
+I want to follow the BMAD methodology step by step.
+
+Please act as a product analyst and help me discover, clarify, and refine the product requirements.
+
+Do not start coding.
+
+Do not create the PRD yet.
+
+Ask me questions about the users, their needs, the application's functionality, limitations, user experience, and MVP scope.
+
+I prefer an interactive, coaching-style process.
+
+Please ask questions in small groups, explain important trade-offs, and help me make product decisions.
+
+Once we have clarified the product vision and requirements, help me create a structured Product Brief that we can later use as input for the PRD.

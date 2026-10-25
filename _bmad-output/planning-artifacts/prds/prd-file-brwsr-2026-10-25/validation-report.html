@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PRD Validation: PRD: Find</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --border: #e7e5e4;
+    --text: #1c1917;
+    --muted: #78716c;
+
+    --verdict-strong: #16a34a;
+    --verdict-adequate: #65a30d;
+    --verdict-thin: #d97706;
+    --verdict-broken: #dc2626;
+
+    --sev-low: #64748b;
+    --sev-medium: #ca8a04;
+    --sev-high: #ea580c;
+    --sev-critical: #dc2626;
+
+    --grade-exc: #16a34a;
+    --grade-good: #65a30d;
+    --grade-fair: #d97706;
+    --grade-poor: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  header.report-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .title h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+  .title .subtitle { color: var(--muted); font-size: 13px; margin-top: 4px; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  .grade {
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    color: white;
+    font-size: 15px;
+    white-space: nowrap;
+  }
+  .grade-excellent { background: var(--grade-exc); }
+  .grade-good { background: var(--grade-good); }
+  .grade-fair { background: var(--grade-fair); }
+  .grade-poor { background: var(--grade-poor); }
+
+  .synthesis {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--muted);
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin-bottom: 24px;
+    font-size: 15.5px;
+  }
+  .synthesis p { margin: 0 0 10px; }
+  .synthesis p:last-child { margin-bottom: 0; }
+
+  .dimension-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .dim-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .dim-card .dim-name { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .dim-card .dim-verdict { font-size: 14px; font-weight: 600; }
+
+  section.dimension, section.reviewer-section { margin-bottom: 14px; }
+  section.dimension details, section.reviewer-section details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  section summary {
+    padding: 14px 20px;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  section summary::-webkit-details-marker { display: none; }
+  section summary::before {
+    content: "▸";
+    display: inline-block;
+    color: var(--muted);
+    transition: transform 0.15s ease;
+  }
+  section details[open] summary::before { transform: rotate(90deg); }
+  section summary h2 {
+    display: inline;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    flex: 1;
+  }
+  .verdict-pill {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: white;
+  }
+  .verdict-strong { background: var(--verdict-strong); }
+  .verdict-adequate { background: var(--verdict-adequate); }
+  .verdict-thin { background: var(--verdict-thin); }
+  .verdict-broken { background: var(--verdict-broken); }
+
+  .dim-body { padding: 4px 20px 18px; }
+  .dim-judgment { color: var(--text); font-size: 14.5px; }
+  .dim-judgment p { margin: 0 0 10px; }
+
+  .findings-list { padding: 0 20px 4px; }
+  article.finding {
+    padding: 14px 0;
+    border-top: 1px solid var(--border);
+  }
+  article.finding:first-child { border-top: none; }
+  article.finding header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .badge {
+    font-size: 10.5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+  }
+  .badge-sev-low { background: rgba(100, 116, 139, 0.12); color: var(--sev-low); }
+  .badge-sev-medium { background: rgba(202, 138, 4, 0.14); color: var(--sev-medium); }
+  .badge-sev-high { background: rgba(234, 88, 12, 0.14); color: var(--sev-high); }
+  .badge-sev-critical { background: rgba(220, 38, 38, 0.14); color: var(--sev-critical); }
+  .finding-title { margin: 0; font-size: 15px; font-weight: 500; flex: 1; min-width: 200px; }
+  .finding-location { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; color: var(--muted); }
+  .finding-note, .finding-fix { margin-top: 6px; font-size: 14px; }
+  .finding-fix strong { color: var(--muted); font-weight: 500; }
+
+  .reviewer-source {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  .mechanical {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-top: 24px;
+    font-size: 14px;
+  }
+  .mechanical h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .mechanical ul { margin: 0; padding-left: 20px; }
+  .mechanical li { margin-bottom: 4px; color: var(--text); }
+
+  table.status { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+  table.status th, table.status td { border-top: 1px solid var(--border); padding: 6px 8px; text-align: left; vertical-align: top; }
+  table.status th { color: var(--muted); font-weight: 500; }
+
+  footer.report-footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  footer .meta { display: flex; gap: 24px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+  <div class="container">
+
+    <header class="report-header">
+      <div class="title">
+        <h1>PRD: Find — Validation Report</h1>
+        <div class="subtitle">_bmad-output/planning-artifacts/prds/prd-file-brwsr-2026-10-25/prd.md (+ addendum.md) · second run</div>
+      </div>
+      <div class="grade grade-excellent">Excellent</div>
+    </header>
+
+    <div class="synthesis">
+      <p>This is a strong, build-ready PRD, and better than the version reviewed in <code>review-rubric-v1.md</code>. The edits closed every high finding in the rubric and EARS reviews. Typo distance is now defined (Damerau-Levenshtein, OSA). Query words are split by the same rules as names. A <strong>substring</strong> match kind honors EARS-01's "contain". EARS-03 rev. 1 and EARS-04 are traced in §0 and carried by FR-12. The deliberate DOCX trade-off now reads the same way in the Vision, §2.2, UJ-1, FR-16, §7.2, and SM-1, so it counts as an accepted risk rather than a defect. The new match kinds, rank order, and FR examples agree with one another; every worked example checks out. What remains at risk is narrower. The <strong>substring</strong> tier has no minimum word length and ranks above <strong>content</strong>, so short queries can still bury the content matches the thesis depends on. FR-22 doesn't say what happens to the existing result list during a full rebuild. FR-21's open-in-tab can't keep NFR-5's promise for PDFs, and the UJ-1 hand-off relies on pasting a relative location into File Explorer, which is unverified. None of this blocks UX, but FR-10, FR-21, and FR-22 should be tightened before stories are written.</p>
+      <p>The EARS re-check (<code>review-ears.md</code>) has one high finding, N-01: when indexing is cancelled while listing is still running, EARS-03 rev. 1 ("No matching files found") and EARS-04 ("No matches yet. Still searching…") both apply, so no implementation can pass both. The rubric rates the same issue as low (N-7). A one-line fix has been proposed to the user and is pending approval: make listing completion mandatory in the "finished" condition ("listing has completed, and indexing has completed or was cancelled") in the EARS file and FR-12. The grade follows the rubric, as validate.md specifies; until that fix lands, this is the one open requirements conflict.</p>
+      <p>The adversarial review (<code>review-adversarial-general.md</code>) covered the previous PRD version and is not a current reviewer. Its critical and high findings were tracked in the rubric's <em>Prior findings status</em> table: 10 resolved, 2 partially resolved, 2 accepted-risk, 0 open.</p>
+    </div>
+
+    <div class="dimension-summary">
+      <div class="dim-card"><div class="dim-name">Decision-readiness</div><div class="dim-verdict" style="color: var(--verdict-strong)">strong</div></div>
+      <div class="dim-card"><div class="dim-name">Substance over theater</div><div class="dim-verdict" style="color: var(--verdict-strong)">strong</div></div>
+      <div class="dim-card"><div class="dim-name">Strategic coherence</div><div class="dim-verdict" style="color: var(--verdict-strong)">strong</div></div>
+      <div class="dim-card"><div class="dim-name">Done-ness clarity</div><div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div></div>
+      <div class="dim-card"><div class="dim-name">Scope honesty</div><div class="dim-verdict" style="color: var(--verdict-strong)">strong</div></div>
+      <div class="dim-card"><div class="dim-name">Downstream usability</div><div class="dim-verdict" style="color: var(--verdict-strong)">strong</div></div>
+      <div class="dim-card"><div class="dim-name">Shape fit</div><div class="dim-verdict" style="color: var(--verdict-strong)">strong</div></div>
+    </div>
+
+    <section class="dimension">
+      <details>
+        <summary><h2>Decision-readiness</h2><span class="verdict-pill verdict-strong">strong</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>Decisions are stated as decisions and paired with what they cost. The two biggest trade-offs are now explicit and consistent. DOCX content search is out, with a <code>[NOTE FOR PM]</code> admitting that "operating-system search already indexes Word and Excel content" (§7.2), and the thesis is narrowed to match (§1 ¶3). The rank question is closed: OQ-3 is marked <em>Decided</em>, and the placement of content between substring and typo is written into §3 Rank. Mixed name-and-content queries are now an explicit Out of Scope item (FR-12, §7.2). Open Questions are genuinely open, and each names what it informs. §0 now says plainly that none blocks a phase.</p>
+          <p>No findings. The SM-1/SM-8 protocol conflict (N-2) is under Strategic coherence.</p>
+        </div></div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary><h2>Substance over theater</h2><span class="verdict-pill verdict-strong">strong</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>One persona, and Daniel drives real requirements: progressive listing, the smart date filter, preview-to-confirm, Copy location, and the "content not searchable" labels. NFRs carry thresholds, a reference machine, a reference workload (700 × 20 KB text, 300 × 500 KB PDFs), and <em>Verify</em> steps. The Vision's "MVP has one job" paragraph is a falsifiable bet that now names its format boundary. Each §1.1 principle points to the FR or NFR it settles. The counter-metrics are product-specific. No findings.</p>
+        </div></div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary><h2>Strategic coherence</h2><span class="verdict-pill verdict-strong">strong</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>The thesis is now narrower and fully coherent with scope and metrics. "Forgiving, content-aware search … faster than OS search, for text files and PDFs" lines up with FR-14 and FR-16, SM-1's task design, and SM-3, which isolates content search. Each counter-metric is tied to the SM it balances. Two issues weaken how well the metrics test the bet.</p>
+        </div></div>
+        <div class="findings-list">
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">N-1. The substring tier can still bury content matches</h3><span class="finding-location">§3 Match kind, Rank; FR-9; FR-11; SM-3; SM-C1</span></header>
+            <div class="finding-note">Substring needs only that "every query word appears somewhere in the name", with no minimum word length, and it ranks above content. <code>tax</code> substring-matches <code>syntax.md</code> and <code>taxi_receipt.pdf</code>, all outranking the text file that actually contains "tax". SM-3's fixtures never meet this competition; SM-C1 only measures name fixtures. Residual of adversarial H-5.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Give substring a floor (a query word of 3 or fewer characters matches only as a token or token beginning). Add SM-3 fixtures with competing substring and typo name matches, and extend SM-C1 to cover them.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">N-2. SM-8 is measured inside SM-1, but the two protocols conflict</h3><span class="finding-location">§8 SM-1 Protocol, SM-8; FR-1</span></header>
+            <div class="finding-note">If participants do the MyFiles setup, it lands inside SM-1's timed tasks and inflates Find's time; if not, SM-8 tests nothing real. <code>C:\MyFiles</code> is typically outside Windows Search's default indexed locations, which may be unfair to the OS-search arm.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Run SM-8 as a separate, untimed step before SM-1. State whether the SM-1 seeded folder is the MyFiles folder and, if so, that it has been added to the OS index.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary><h2>Done-ness clarity</h2><span class="verdict-pill verdict-adequate">adequate</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>The matching core is now precise enough to test. The token rules, the query split, the five match kinds, the rank order, the OSA distance, the length-based edit limits, and the name-date formats all come with worked examples, and every FR-9, FR-10, and FR-11 example yields the labelled kind and order. FR-12 and EARS-04 agree on both message strings and the "listing or indexing" condition. What holds this at <em>adequate</em> are the two new FRs and one gap in the typo rule.</p>
+        </div></div>
+        <div class="findings-list">
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">N-3. FR-22 doesn't say what the user sees during a rebuild</h3><span class="finding-location">FR-22; FR-15; FR-12; NFR-4</span></header>
+            <div class="finding-note">Unclear whether the old tree, result list, and content index stay visible until replaced, or are cleared and refilled. "EARS-04 applies" suggests clearing, which loses the user's file for up to 60 seconds; keeping both indexes risks the 200 MB limit.</div>
+            <div class="finding-fix"><strong>Fix:</strong> State one behavior, e.g. existing entries stay until listing confirms or removes them, and EARS-04 applies only if the result list is empty; or say explicitly that rescan clears and rebuilds.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">N-4. Typo tolerance against token beginnings has no defined prefix length</h3><span class="finding-location">FR-10; addendum "Typo distance"</span></header>
+            <div class="finding-note">The only rule is the addendum's "token prefixes of a similar length". Does <code>budgte</code> match <code>budgeting.xlsx</code>? Does <code>from</code> match <code>format</code>? Each answer moves SM-2 and SM-C1.</div>
+            <div class="finding-fix"><strong>Fix:</strong> In FR-10, compare against the token prefix of the same length as the query word; add one positive and one negative example.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">N-5. FR-21 can't keep NFR-5's and NFR-1's promise for a PDF opened in a tab</h3><span class="finding-location">FR-21; NFR-5; NFR-1; SM-6</span></header>
+            <div class="finding-note">A PDF opened in a new tab uses the browser's own viewer, which Find doesn't control: links are clickable and some document scripts may run. The same gap applies to in-app preview if pdf.js scripting and links aren't disabled (adversarial M-5).</div>
+            <div class="finding-fix"><strong>Fix:</strong> Scope NFR-5: in-app previews are inert; a PDF opened in a browser tab is outside Find's guarantee, and user-initiated link clicks are excluded from NFR-1 and SM-6. Or open PDFs in a Find-controlled viewer tab.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">N-6. The Copy location hand-off is unverified</h3><span class="finding-location">FR-21; UJ-1 Resolution; §3 Location; SM-1 Timing</span></header>
+            <div class="finding-note">The copied location is relative (<code>MyFiles/Clients/Acme/…</code>). Whether pasting it into Explorer or Finder's Go to Folder resolves depends on the current folder, and on macOS it generally won't. SM-1 counts this as a valid stop. Residual of adversarial C-2.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Add an OQ-1 spike item to verify the paste flow on Windows and macOS; reword UJ-1 and the FR-21 hint to the flow that works; consider copying the file name too.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-low">low</span><h3 class="finding-title">N-7. EARS-03 rev. 1 and EARS-04 overlap after a cancel during listing</h3><span class="finding-location">FR-12; FR-13; EARS file</span></header>
+            <div class="finding-note">If the user cancels indexing while listing is still running, both conditions are true and prescribe different messages. Same issue as EARS review N-01, which rates it high.</div>
+            <div class="finding-fix"><strong>Fix:</strong> In FR-12 and the EARS file, write "or listing has completed and indexing was cancelled".</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-low">low</span><h3 class="finding-title">N-8. Whether the extension takes part in name matching is unstated</h3><span class="finding-location">§3 Token; FR-9</span></header>
+            <div class="finding-note">Dots split tokens, so <code>pdf</code> would make every PDF an exact match, and <code>doc</code> every DOCX a partial match.</div>
+            <div class="finding-fix"><strong>Fix:</strong> State whether the extension is a matchable token (e.g. matched but ranked below a base-name match, or excluded in favor of the type filter).</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-low">low</span><h3 class="finding-title">N-9. A concatenated query doesn't match a separated name</h3><span class="finding-location">§3 Query, Token; FR-9</span></header>
+            <div class="finding-note"><code>annualreport</code> against <code>Annual Report 2025.pdf</code> matches no kind. Mirror image of the fixed F-02, and common when users retype a name from memory.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Also compare each query word against the name with separators removed, as a substring, or list this case in §7.2.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-low">low</span><h3 class="finding-title">N-10. FR-22 has two smaller gaps</h3><span class="finding-location">FR-22</span></header>
+            <div class="finding-note">"Listed at HH:MM" doesn't say start or end of listing, or time format. "This file is no longer in the folder" is defined only after a rescan, not for a file deleted between rescans.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Say "time listing completed, local time". Extend the message to any preview or open that fails because the file is gone.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-low">low</span><h3 class="finding-title">N-11. The index limit's unit doesn't match its measure</h3><span class="finding-location">NFR-4</span></header>
+            <div class="finding-note">"200 MB … measured as the total length of stored searchable content": characters vs bytes differ by a factor of 2.</div>
+            <div class="finding-fix"><strong>Fix:</strong> State the limit in one unit, e.g. "100 million characters (about 200 MB as UTF-16)".</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary><h2>Scope honesty</h2><span class="verdict-pill verdict-strong">strong</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>§6 and §7.2 do real work. The DOCX gap carries a <code>[NOTE FOR PM]</code> with the competitive cost and the post-MVP order (DOCX → XLSX → OCR). Cloud-only file detection, mixed name-and-content queries, typo tolerance in content, and day-first dates are each named as cuts. FR-12 and FR-22 carry their own <em>Out of Scope</em> lines. Open-items density (about 20 assumption tags, 6 live OQs) is fine for portfolio stakes with no blockers.</p>
+        </div></div>
+        <div class="findings-list">
+          <article class="finding">
+            <header><span class="badge badge-sev-low">low</span><h3 class="finding-title">N-12. The Vision still overclaims safety</h3><span class="finding-location">§1 ¶2 vs §7.2, OQ-9</span></header>
+            <div class="finding-note">"That makes it safe to use on any work computer" sits beside the admission that, on a synced folder, "the operating system may download files during indexing".</div>
+            <div class="finding-fix"><strong>Fix:</strong> "safe to use on any work computer: it reads only the folder you choose, and changes nothing".</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary><h2>Downstream usability</h2><span class="verdict-pill verdict-strong">strong</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>The Glossary covers every load-bearing noun, and the new ones (Token, Query, Listing, substring, Content-only match) are used consistently in FR-8 to FR-15 and FR-22. Match-kind order is stated identically in §3 Match kind, §3 Rank, FR-11, and §7.1. The §0 EARS table resolves to real FRs and acceptance tests, and the EARS file links back. IDs are contiguous. Each feature section reads on its own.</p>
+        </div></div>
+        <div class="findings-list">
+          <article class="finding">
+            <header><span class="badge badge-sev-low">low</span><h3 class="finding-title">N-13. The content match kind contradicts its own tie-break rule</h3><span class="finding-location">§3 Match kind</span></header>
+            <div class="finding-note"><strong>content</strong> is defined as a content-only match, yet a typo name match that is also a content match "gets the better of the two kinds", which is content, which the entry can't have under the definition.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Define content as "a content match whose name match kind, if any, ranks below content (typo or none)".</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-low">low</span><h3 class="finding-title">Carry-over (not counted): residual synonyms</h3><span class="finding-location">§1; UJ-1; §4.5; NFR-4; FR-1; FR-13</span></header>
+            <div class="finding-note">"Results"/"name results" for <strong>result list</strong>; "folder access"/"folder permission" beside <strong>read-only access</strong>; "search box", "search results area", and "preview panel" are not Glossary terms.</div>
+            <div class="finding-fix"><strong>Fix:</strong> As in <code>review-rubric-v1.md</code>, and add <strong>preview panel</strong> for EARS-02.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary><h2>Shape fit</h2><span class="verdict-pill verdict-strong">strong</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>A single-persona consumer utility with one rich UJ, its edge cases folded into it, and no journey theater is the right shape. The new UJ-1 edge cases each cite their FR. Implementation detail stays in the addendum. The chain-top traceability is proportionate. No findings.</p>
+        </div></div>
+      </details>
+    </section>
+
+    <section class="reviewer-section">
+      <details>
+        <summary><h2>EARS conformance re-check (v2)</h2><span class="reviewer-source">review-ears.md</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>All four EARS requirements are <strong>satisfied with caveats</strong>. EARS-01 passes on its fixture: substring matching now honours "names contain the search term", and no match kind adds <code>photo.jpg</code>. EARS-02 is unchanged since v1. EARS-03 rev. 1 and EARS-04 are mirrored exactly in FR-12, but their conditions overlap. Project Constraints are all covered. The original EARS-03 remains traceable through the EARS file's revision history and §0.</p>
+          <p>New findings: critical 0, high 1, medium 2, low 3. v1 status (17 findings): 6 resolved, 2 partially resolved, 9 open; all v1 high findings resolved.</p>
+        </div></div>
+        <div class="findings-list">
+          <article class="finding">
+            <header><span class="badge badge-sev-high">high</span><h3 class="finding-title">N-01. EARS-03 rev. 1 and EARS-04 overlap when indexing is cancelled before listing finishes</h3><span class="finding-location">EARS-03 rev. 1, EARS-04; FR-12 bullets 2–3; FR-13; FR-22</span></header>
+            <div class="finding-note">Listing and indexing both start on access, so the user can cancel indexing while listing runs. Both conditions are then true and require different messages in the same area. Two requirements conflict, and no implementation can pass both. Choosing EARS-03 re-creates the false "no match" the revision was meant to remove. "Indexing was cancelled" is also sticky across a rescan. <em>Fix proposed to the user; pending approval.</em></div>
+            <div class="finding-fix"><strong>Fix:</strong> In the EARS file and FR-12: "the search has finished (listing has completed, and indexing has completed or was cancelled)". In FR-22, state that a rescan clears the cancelled state.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">N-02. A non-empty query with no query words is undefined, and literally matches every file</h3><span class="finding-location">§3 Query, Token, Name match; FR-12; EARS-01, EARS-03</span></header>
+            <div class="finding-note">A term such as <code>-</code>, <code>...</code>, or spaces only is non-empty to EARS but yields zero query words, so "every query word matches" is vacuously true for every file. Treating it as empty is reasonable but an unlogged deviation from "non-empty".</div>
+            <div class="finding-fix"><strong>Fix:</strong> Add to §3: a query that yields no query words is an <strong>empty query</strong>. Record this reading of "non-empty" in the §0 traceability table.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">N-03. The EARS-04 acceptance test cannot be reproduced reliably as written</h3><span class="finding-location">EARS-04 acceptance test; FR-12 bullet 2</span></header>
+            <div class="finding-note">Indexing one small PDF takes milliseconds, so a tester cannot reliably type <code>xyz123</code> before it finishes. The test is timing-dependent.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Name a deterministic method: a test hook that pauses the indexer, or a fixture large enough that indexing visibly runs. State that the in-progress state ends when the FR-15 <em>still updating</em> indicator disappears.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-low">low</span><h3 class="finding-title">N-04. No match kind for a query word that spans a token boundary</h3><span class="finding-location">§3 Match kind; FR-11</span></header>
+            <div class="finding-note"><code>tre</code> matches <code>ProjectReport.txt</code> across <code>Project|Report</code>, but it is not exact, partial, or "inside a token", so no kind applies, while FR-11 requires every result to be labelled.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Define substring as "every query word appears in the name, and at least one appears neither as a token nor as a token beginning".</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-low">low</span><h3 class="finding-title">N-05. EARS form quality of the revised statements</h3><span class="finding-location">EARS-03 rev. 1, EARS-04</span></header>
+            <div class="finding-note">EARS-03 rev. 1 puts a state inside the If clause. EARS-04 is labelled state-driven but is a complex While + If requirement with no "then", and the transition to EARS-03 lives only in its acceptance test.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Relabel EARS-04 "Complex" and write "…, if …, then the system shall …". Restate EARS-03 rev. 1 in While/If form.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-low">low</span><h3 class="finding-title">N-06. The EARS-04 transition wording differs slightly between the files</h3><span class="finding-location">EARS-04 expected result; FR-12 bullet 2</span></header>
+            <div class="finding-note">EARS: "Once indexing completes". FR-12: "once both complete". Equivalent in practice, but the texts differ.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Align the EARS file to "Once listing and indexing complete".</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="reviewer-section">
+      <details>
+        <summary><h2>Prior findings status (tracked by the rubric)</h2><span class="reviewer-source">review-rubric.md · from review-rubric-v1.md, review-ears-v1.md, review-adversarial-general.md</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>Every critical and high finding from the three prior reviews: 14 findings. <strong>10 resolved, 2 partially resolved, 2 accepted-risk, 0 open.</strong> <code>review-adversarial-general.md</code> reviewed the previous PRD version and is not a current reviewer; its findings appear here only as tracked items.</p>
+          <table class="status">
+            <tr><th>Source</th><th>ID</th><th>Sev.</th><th>Finding</th><th>Status</th></tr>
+            <tr><td>rubric-v1</td><td>DN-1</td><td>high</td><td>"Edit" undefined; <code>reprot</code> fails under plain Levenshtein</td><td>Resolved</td></tr>
+            <tr><td>ears-v1</td><td>F-01</td><td>high</td><td>Token-beginning matching contradicts EARS-01 "contain"</td><td>Resolved</td></tr>
+            <tr><td>ears-v1</td><td>F-02</td><td>high</td><td>Query splitting rule undefined</td><td>Resolved</td></tr>
+            <tr><td>ears-v1</td><td>F-03</td><td>high</td><td>FR-12 silently changes EARS-03's message</td><td>Resolved</td></tr>
+            <tr><td>adversarial</td><td>C-1</td><td>critical</td><td>Thesis and flagship journey depend on DOCX</td><td>Accepted-risk</td></tr>
+            <tr><td>adversarial</td><td>C-2</td><td>critical</td><td>Journey ends at a step Find can't perform</td><td>Partially resolved (N-6)</td></tr>
+            <tr><td>adversarial</td><td>H-1</td><td>high</td><td>Tokenizer splits <code>Q3</code></td><td>Resolved</td></tr>
+            <tr><td>adversarial</td><td>H-2</td><td>high</td><td>"Exact" could be true for a non-name-match</td><td>Resolved</td></tr>
+            <tr><td>adversarial</td><td>H-3</td><td>high</td><td>Name search waits for enumeration; false "no match"</td><td>Resolved</td></tr>
+            <tr><td>adversarial</td><td>H-4</td><td>high</td><td>500 MB memory budget unmeasurable</td><td>Resolved</td></tr>
+            <tr><td>adversarial</td><td>H-5</td><td>high</td><td>Rank buries content matches</td><td>Partially resolved (N-1)</td></tr>
+            <tr><td>adversarial</td><td>H-6</td><td>high</td><td>Cloud-synced folders cause mass downloads</td><td>Accepted-risk</td></tr>
+            <tr><td>adversarial</td><td>H-7</td><td>high</td><td>No refresh; index goes stale silently</td><td>Resolved</td></tr>
+            <tr><td>adversarial</td><td>H-8</td><td>high</td><td>SM-1 can't validate the thesis</td><td>Resolved</td></tr>
+          </table>
+        </div></div>
+      </details>
+    </section>
+
+    <div class="mechanical">
+      <h3>Mechanical notes</h3>
+      <ul>
+        <li>New rubric finding counts: critical 0, high 0, medium 6 (N-1 to N-6), low 7 (N-7 to N-13); one low carry-over not counted.</li>
+        <li>IDs FR-1 to FR-22, NFR-1 to NFR-8, SM-1 to SM-9, SM-C1 to SM-C3, OQ-1 to OQ-9, UJ-1, and EARS-01 to EARS-04 are contiguous and unique; all cross-references resolve. SM-1 "Validates FR-8 to FR-21" omits FR-22, which is defensible.</li>
+        <li>Assumptions Index roundtrip is clean. FR-21 and FR-22 introduce exact UI strings ("Listed at HH:MM", "This file is no longer in the folder", the FR-21 hint) without assumption tags (same pattern as adversarial L-6).</li>
+        <li>EARS traceability: §0 and the EARS file agree; both FR-12 tests reproduce the EARS fixtures and strings exactly. Still undocumented: FR-20's narrowing of EARS-02 to "with a folder selected" (EARS F-07, medium).</li>
+        <li>Process fixes since v1: §0 says no OQ blocks a phase; FR-19's "Confirmed by the user" is gone; NFR-3 storage list extended; NFR-4 reference workload defined; mixed-query gap is explicit Out of Scope.</li>
+        <li>Adversarial medium/low carry-overs still open: M-1, M-2, M-4, M-5 (see N-5), M-7, M-9, M-10, M-11, M-12, M-13, L-2, L-4. Partly addressed: M-6, M-8.</li>
+        <li>OQ-3, OQ-6, and OQ-8 are Decided/Resolved but still sit among the open questions in §9 (cosmetic).</li>
+        <li>Required sections are all present for the stakes and product type.</li>
+      </ul>
+    </div>
+
+    <footer class="report-footer">
+      <div class="meta">
+        <span>Rubric: _bmad-output/planning-artifacts/prds/prd-file-brwsr-2026-10-25/review-rubric.md</span>
+        <span>EARS: review-ears.md</span>
+        <span>Previous report: validation-report-v1.html</span>
+        <span>Generated: 2026-10-25T17:06:19+02:00</span>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

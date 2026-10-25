@@ -22,14 +22,23 @@ While no file is selected, the system shall display a "Select a file to preview"
 - Action: Leave all files unselected.
 - Expected Result: The preview panel displays "Select a file to preview".
 
-## EARS-03: Unwanted Behavior Requirement
+## EARS-03: Unwanted Behavior Requirement (rev. 2, 2026-10-25)
 
-If no files match a non-empty search term, then the system shall display a "No matching files found" message in the search results area.
+If no files match a non-empty search term, listing has completed, and indexing has completed or was cancelled, then the system shall display a "No matching files found" message in the search results area.
 
 **Acceptance Test:**
 - Input: A folder containing `report.pdf` and `photo.jpg`.
-- Action: Search for `xyz123`.
+- Action: Wait until listing completes and indexing completes (or cancel indexing after listing completes), then search for `xyz123`.
 - Expected Result: No files appear in the search results, and the message "No matching files found" is displayed.
+
+## EARS-04: State-driven Requirement (new, derived from EARS-03 rev. 1; unchanged in rev. 2)
+
+While listing or indexing is in progress, if no files match a non-empty search term, the system shall display a "No matches yet. Still searching…" message in the search results area.
+
+**Acceptance Test:**
+- Input: A folder containing `report.pdf` and `photo.jpg`, with indexing still in progress.
+- Action: Search for `xyz123` before indexing completes.
+- Expected Result: No files appear in the search results, and the message "No matches yet. Still searching…" is displayed. Once indexing completes, the message changes to "No matching files found" (EARS-03).
 
 ## Project Constraints
 
@@ -38,3 +47,15 @@ If no files match a non-empty search term, then the system shall display a "No m
 - Read-only access to user-selected folders.
 - No persistent storage of file contents or metadata.
 - The user must explicitly select the folder to access.
+
+## Revision History
+
+- **2026-10-25: EARS-03 rev. 2.** Re-validation found that EARS-03 rev. 1 ("…or indexing was cancelled") and EARS-04 ("While listing or indexing is in progress") both applied when indexing was cancelled while listing was still running. Rev. 2 requires listing to be complete, so the two cannot overlap. A rescan clears the cancelled state (PRD FR-12, FR-22).
+- **EARS-03 rev. 1 (superseded, kept for traceability):**
+  > If no files match a non-empty search term and the search has finished (listing and indexing have completed, or indexing was cancelled), then the system shall display a "No matching files found" message in the search results area.
+
+- **2026-10-25: EARS-03 revised (rev. 1), EARS-04 added.** PRD validation found that the original EARS-03 would show "No matching files found" while files were still being listed or indexed, a false "no match" that could hide the right file. The revision adds a "search has finished" condition, and EARS-04 covers the in-progress state. EARS-01 and EARS-02 are unchanged. Traceability to the PRD: see §0 of `_bmad-output/planning-artifacts/prds/prd-file-brwsr-2026-10-25/prd.md`.
+- **Original EARS-03 (superseded, kept for traceability):**
+  > If no files match a non-empty search term, then the system shall display a "No matching files found" message in the search results area.
+  >
+  > Acceptance Test: Input: a folder containing `report.pdf` and `photo.jpg`. Action: search for `xyz123`. Expected result: no files appear in the search results, and the message "No matching files found" is displayed.
