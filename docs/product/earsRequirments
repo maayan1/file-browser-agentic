@@ -13,7 +13,10 @@ When the user enters a search term, the system shall display all files within th
 - Action: Enter `report` in the search field.
 - Expected Result: Only `report.pdf` and `report-final.docx` appear in the search results.
 
-## EARS-02: State-driven Requirement
+## EARS-02: State-driven Requirement (DEFERRED, 2026-10-25)
+
+> **Status: deferred** with file preview (PRD FR-20, §11). The text below is unchanged and applies when preview returns. It is not part of the MVP.
+
 
 While no file is selected, the system shall display a "Select a file to preview" message in the preview panel.
 
@@ -22,23 +25,23 @@ While no file is selected, the system shall display a "Select a file to preview"
 - Action: Leave all files unselected.
 - Expected Result: The preview panel displays "Select a file to preview".
 
-## EARS-03: Unwanted Behavior Requirement (rev. 2, 2026-10-25)
+## EARS-03: Unwanted Behavior Requirement (rev. 3, 2026-10-25)
 
-If no files match a non-empty search term, listing has completed, and indexing has completed or was cancelled, then the system shall display a "No matching files found" message in the search results area.
+If no files match a non-empty search term and listing has completed, then the system shall display a "No matching files found" message in the search results area.
 
 **Acceptance Test:**
 - Input: A folder containing `report.pdf` and `photo.jpg`.
-- Action: Wait until listing completes and indexing completes (or cancel indexing after listing completes), then search for `xyz123`.
+- Action: Wait until listing completes, then search for `xyz123`.
 - Expected Result: No files appear in the search results, and the message "No matching files found" is displayed.
 
-## EARS-04: State-driven Requirement (new, derived from EARS-03 rev. 1; unchanged in rev. 2)
+## EARS-04: State-driven Requirement (rev. 1, 2026-10-25)
 
-While listing or indexing is in progress, if no files match a non-empty search term, the system shall display a "No matches yet. Still searching…" message in the search results area.
+While listing is in progress, if no files match a non-empty search term, the system shall display a "No matches yet. Still searching…" message in the search results area.
 
 **Acceptance Test:**
-- Input: A folder containing `report.pdf` and `photo.jpg`, with indexing still in progress.
-- Action: Search for `xyz123` before indexing completes.
-- Expected Result: No files appear in the search results, and the message "No matches yet. Still searching…" is displayed. Once indexing completes, the message changes to "No matching files found" (EARS-03).
+- Input: A folder containing `report.pdf` and `photo.jpg`, with listing still in progress.
+- Action: Search for `xyz123` before listing completes.
+- Expected Result: No files appear in the search results, and the message "No matches yet. Still searching…" is displayed. Once listing completes, the message changes to "No matching files found" (EARS-03).
 
 ## Project Constraints
 
@@ -49,6 +52,18 @@ While listing or indexing is in progress, if no files match a non-empty search t
 - The user must explicitly select the folder to access.
 
 ## Revision History
+
+- **2026-10-25: Scope reduction to a filename-only MVP.** Content search and indexing were deferred (PRD §11).
+  - **EARS-03 rev. 3:** the indexing and cancel conditions are removed; only "listing has completed" remains.
+  - **EARS-04 rev. 1:** "listing or indexing" becomes "listing".
+  - **EARS-02 deferred** with file preview, with its text unchanged.
+  - EARS-01 is unchanged.
+- **EARS-03 rev. 2 (superseded, kept for traceability):**
+  > If no files match a non-empty search term, listing has completed, and indexing has completed or was cancelled, then the system shall display a "No matching files found" message in the search results area.
+  >
+  > Acceptance Test: wait until listing completes and indexing completes (or cancel indexing after listing completes), then search for `xyz123`.
+- **EARS-04 original (superseded, kept for traceability):**
+  > While listing or indexing is in progress, if no files match a non-empty search term, the system shall display a "No matches yet. Still searching…" message in the search results area.
 
 - **2026-10-25: EARS-03 rev. 2.** Re-validation found that EARS-03 rev. 1 ("…or indexing was cancelled") and EARS-04 ("While listing or indexing is in progress") both applied when indexing was cancelled while listing was still running. Rev. 2 requires listing to be complete, so the two cannot overlap. A rescan clears the cancelled state (PRD FR-12, FR-22).
 - **EARS-03 rev. 1 (superseded, kept for traceability):**

@@ -10,6 +10,8 @@ This addendum holds technical detail and rejected alternatives that belong to ar
 
 ## Likely implementation notes (for architecture to confirm)
 
+> **Scope reduced (2026-10-25):** the notes on open-in-tab, typo distance, the index limit, Rescan, Web Worker indexing, PDF, fuzzy matching, safe previews, and name-date detection now apply to **deferred** requirements (PRD §11). They are kept for when those features return. The folder-access, MyFiles, and no-persistence notes still apply to the MVP.
+
 - **Folder access:**
   - File System Access API, `showDirectoryPicker({ mode: "read" })`. Chromium only.
   - Feature-detect it for FR-4.
